@@ -12,7 +12,7 @@ import pickle
 import logging
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-log_file = './Res16/FedDynamic/cifar100/label/Res-label-training.log'
+log_file = './ResNet/FedDynamic/cifar10/label/Res-label-training.log'
 logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s [%(levelname)s] - %(message)s')
 writer = SummaryWriter(log_dir='./Res16/FedDynamic/cifar100/label/')
 
@@ -63,7 +63,7 @@ class BasicBlock(nn.Module):
         return out
 
 class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=100):
+    def __init__(self, block, num_blocks, num_classes=10):
         super(ResNet, self).__init__()
         self.in_planes = 64
 
@@ -94,7 +94,7 @@ class ResNet(nn.Module):
         out = self.linear(out)
         return out
 
-def ResNet16(num_classes=100):  # 默认参数设置为10个类
+def ResNet16(num_classes=10):  # 默认参数设置为10个类
     return ResNet(BasicBlock, [6, 6, 6], num_classes=num_classes)
 
 def calculate_accuracy(output, target):
@@ -207,21 +207,21 @@ def main():
     global_model.to(device)
     global_optimizer = optim.Adam(global_model.parameters(), lr=1e-3)
 
-    num_clients = 10  # 客户端数量
+    num_clients = 100  # 客户端数量
     client_models = [copy.deepcopy(global_model) for _ in range(num_clients)]
     client_optimizers = [optim.Adam(client_models[i].parameters(), lr=1e-3) for i in range(num_clients)]
 
     # 数据加载和预处理
-    data_dir = "./data/cifar100-c-label-only/"
+    data_dir = "./data/cifar10-c-label-only/"
     batch_size = 32
     num_epochs = 50
 
-    test_data_path = "./data/cifar100-c-label-only/test-1.pkl"
+    test_data_path = "./data/cifar10-c-label-only/test-1.pkl"
     test_dataset = CustomDataset(test_data_path)
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     start_epoch = 0
-    checkpoint_path = "./Res16/FedDynamic/cifar100/label/checkpoint_epoch_40.pth"
+    checkpoint_path = "./ResNet/FedDynamic/cifar10/label/checkpoint_epoch_40.pth"
     if os.path.exists(checkpoint_path):
         checkpoint = torch.load(checkpoint_path)
         global_model.load_state_dict(checkpoint['model_state_dict'])
@@ -279,7 +279,7 @@ def main():
             f"Epoch {epoch + 1}/{num_epochs}, Total Loss: {avg_loss:.2f}, Average Training Accuracy: {avg_accuracy:.2f}%")
 
         if (epoch + 1) % 5 == 0 or epoch == num_epochs - 1:
-            checkpoint_path = f"./Res16/FedDynamic/cifar100/label/checkpoint_epoch_{epoch + 1}.pth"
+            checkpoint_path = f"./ResNet/FedDynamic/cifar10/label/checkpoint_epoch_{epoch + 1}.pth"
             torch.save({
                 'epoch': epoch + 1,
                 'model_state_dict': global_model.state_dict(),
