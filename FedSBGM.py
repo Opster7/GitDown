@@ -9,10 +9,14 @@ import os
 import pickle
 import logging
 
+torch.manual_seed(42)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
 # 配置日志记录
-log_file = './SBGMDeeper/FedAvg/cifar100/label/SBGM-feature-training.log'
+log_file = './SBGM/FedAvg/cifar10/label/SBGM-feature-training.log'
 logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s [%(levelname)s] - %(message)s')
-writer = SummaryWriter('./SBGMDeeper/FedAvg/cifar100/feature/')
+writer = SummaryWriter('./SBGM/FedAvg/cifar10/feature/')
 
 class CustomDataset(Dataset):
     def __init__(self, data_path, transform=None):
@@ -34,23 +38,26 @@ class CustomDataset(Dataset):
 def main():
     score_net = torch.nn.DataParallel(ScoreNet(marginal_prob_std=marginal_prob_std_fn))
     score_net = score_net.to(device='cuda:0')
-    global_model = Classifier(score_net, num_classes=100)
+    global_model = Classifier(score_net, num_classes=10)
     global_model = global_model.to(device='cuda:0')
 
+    torch.manual_seed(42)
+    torch.backends.cudnn.deterministic = True
+    
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(global_model.parameters(), lr=0.001)  # 使用Adam优化器
 
     batch_size = 32
-    data_dir = "./data/cifar100-c-feature-only/"
+    data_dir = "./data/cifar10-c-feature-only/"
 
-    num_epochs = 20
-    test_data_path = "./data/cifar100-c-feature-only/test-1.pkl"
+    num_epochs = 50
+    test_data_path = "./data/cifar10-c-feature-only/test-1.pkl"
     test_dataset = CustomDataset(test_data_path)
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # Load from checkpoint if exists
     start_epoch = 0  # Initialize start epoch
-    checkpoint_path = "./SBGMDeeper/FedAvg/cifar100/feature/checkpoint_latest.pth"  # Path to your latest checkpoint
+    checkpoint_path = "./SBGM/FedAvg/cifar10/feature/checkpoint_latest.pth"  # Path to your latest checkpoint
     if os.path.exists(checkpoint_path):
         checkpoint = torch.load(checkpoint_path)
         global_model.load_state_dict(checkpoint['model_state_dict'])
@@ -75,7 +82,7 @@ def main():
             client_dataloader = DataLoader(client_dataset, batch_size=batch_size, shuffle=True)
             client_optimizer = optim.Adam(global_model.parameters(), lr=0.001)
 
-            for local_epoch in range(5):
+            for local_epoch in range(10):
                 for inputs, labels in client_dataloader:
                     client_optimizer.zero_grad()
                     time_steps = torch.rand(inputs.shape[0], device=device)
@@ -118,7 +125,7 @@ def main():
         writer.add_scalar('Training Accuracy', training_accuracy, epoch)
 
         if (epoch + 1) % 5 == 0 or epoch == num_epochs - 1:  # Save the last epoch as well
-            checkpoint_path = f"./SBGMDeeper/FedAvg/cifar100/feature/checkpoint_epoch_{epoch + 1}.pth"
+            checkpoint_path = f"./SBGM/FedAvg/cifar10/feature/checkpoint_epoch_{epoch + 1}.pth"
             torch.save({
                 'epoch': epoch + 1,
                 'model_state_dict': global_model.state_dict(),
