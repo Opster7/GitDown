@@ -41,6 +41,9 @@ def main():
     global_model = Classifier(score_net, num_classes=10)
     global_model = global_model.to(device='cuda:0')
 
+    torch.manual_seed(42)
+    torch.backends.cudnn.deterministic = True
+    
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(global_model.parameters(), lr=0.001)  # 使用Adam优化器
 
