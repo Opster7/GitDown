@@ -136,7 +136,7 @@ def main():
         writer.add_scalar('Training Accuracy', training_accuracy, epoch)
 
         if (epoch + 1) % 5 == 0 or epoch == num_epochs - 1:  # Save the last epoch as well
-            checkpoint_path = f"./SBGMDeeper/FedDynamic/cifar100/feature/checkpoint_epoch_{epoch + 1}.pth"
+            checkpoint_path = f"./SBGM/FedDynamic/cifar10/feature/checkpoint_epoch_{epoch + 1}.pth"
             torch.save({
                 'epoch': epoch + 1,
                 'model_state_dict': global_model.state_dict(),
