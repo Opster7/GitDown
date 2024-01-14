@@ -9,10 +9,12 @@ import pickle
 import logging
 from torch.utils.tensorboard import SummaryWriter
 
+
+
 # Configure logging
-log_file = './SBGMDeeper/FedDynamic/cifar100/feature/SBGM-feature-training.log'
+log_file = './SBGM/FedDynamic/cifar10/feature/SBGM-feature-training.log'
 logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s [%(levelname)s] - %(message)s')
-writer = SummaryWriter('./SBGMDeeper/FedDynamic/cifar100/feature/')
+writer = SummaryWriter('./SBGM/FedDynamic/cifar10/feature/')
 
 class CustomDataset(Dataset):
     def __init__(self, data_path, transform=None):
@@ -34,9 +36,12 @@ class CustomDataset(Dataset):
 def main():
     score_net = torch.nn.DataParallel(ScoreNet(marginal_prob_std=marginal_prob_std_fn))
     score_net = score_net.to(device='cuda:0')
-    global_model = Classifier(score_net, num_classes=100)
+    global_model = Classifier(score_net, num_classes=10)
     global_model = global_model.to(device='cuda:0')
 
+    torch.manual_seed(42)
+    torch.backends.cudnn.deterministic = True
+    
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(global_model.parameters(), lr=0.001)  # 使用Adam优化器
 
@@ -80,7 +85,7 @@ def main():
 
             local_updates = 0  # Track the number of updates for this client
 
-            for local_epoch in range(5):
+            for local_epoch in range(10):
                 for inputs, labels in client_dataloader:
                     client_optimizer.zero_grad()
                     time_steps = torch.rand(inputs.shape[0], device=device)
