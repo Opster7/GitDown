@@ -9,10 +9,14 @@ import pickle
 import logging
 from torch.utils.tensorboard import SummaryWriter
 
+torch.manual_seed(42)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+
 # 配置日志记录
-log_file = './SBGMDeeper/FedNova/cifar100/label/SBGM-label-training.log'
+log_file = './SBGM/FedNova/cifar10/label/SBGM-label-training.log'
 logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s [%(levelname)s] - %(message)s')
-writer = SummaryWriter('./SBGMDeeper/FedNova/cifar100/label/')
+writer = SummaryWriter('./SBGM/FedNova/cifar10/label/')
 
 class CustomDataset(Dataset):
     def __init__(self, data_path, transform=None):
@@ -34,7 +38,7 @@ class CustomDataset(Dataset):
 def main():
     score_net = torch.nn.DataParallel(ScoreNet(marginal_prob_std=marginal_prob_std_fn))
     score_net = score_net.to(device='cuda:0')
-    global_model = Classifier(score_net, num_classes=100)
+    global_model = Classifier(score_net, num_classes=10)
     global_model = global_model.to(device='cuda:0')
 
     criterion = nn.CrossEntropyLoss()
@@ -44,13 +48,13 @@ def main():
     data_dir = "./data/cifar100-c-label-only/"
 
     num_epochs = 50
-    test_data_path = "./data/cifar100-c-label-only/test-1.pkl"
+    test_data_path = "./data/cifar10-c-label-only/test-1.pkl"
     test_dataset = CustomDataset(test_data_path)
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # Load from checkpoint if exists
     start_epoch = 0  # Initialize start epoch
-    checkpoint_path = "./SBGMDeeper/FedNova/cifar100/label/checkpoint_epoch_10.pth"  # Path to your latest checkpoint
+    checkpoint_path = "./SBGM/FedNova/cifar10/label/checkpoint_epoch_10.pth"  # Path to your latest checkpoint
     if os.path.exists(checkpoint_path):
         checkpoint = torch.load(checkpoint_path)
         global_model.load_state_dict(checkpoint['model_state_dict'])
@@ -81,7 +85,7 @@ def main():
 
             local_updates = 0  # Track the number of updates for this client
 
-            for local_epoch in range(5):
+            for local_epoch in range(10):
                 for inputs, labels in client_dataloader:
                     client_optimizer.zero_grad()
                     time_steps = torch.rand(inputs.shape[0], device=device)
@@ -129,7 +133,7 @@ def main():
         writer.add_scalar('Training Accuracy', training_accuracy, epoch)
 
         if (epoch + 1) % 5 == 0 or epoch == num_epochs - 1:  # Save the last epoch as well
-            checkpoint_path = f"./SBGMDeeper/FedNova/cifar100/label/checkpoint_epoch_{epoch + 1}.pth"
+            checkpoint_path = f"./SBGM/FedNova/cifar10/label/checkpoint_epoch_{epoch + 1}.pth"
             torch.save({
                 'epoch': epoch + 1,
                 'model_state_dict': global_model.state_dict(),
