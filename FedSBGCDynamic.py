@@ -9,6 +9,9 @@ import pickle
 import logging
 from torch.utils.tensorboard import SummaryWriter
 
+torch.manual_seed(42)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 
 # Configure logging
